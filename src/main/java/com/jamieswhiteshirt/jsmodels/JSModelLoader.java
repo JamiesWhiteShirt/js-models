@@ -95,12 +95,18 @@ public class JSModelLoader implements ICustomModelLoader {
 
     @Override
     public boolean accepts(ResourceLocation modelLocation) {
-        return modelLocation.getResourcePath().endsWith(".js");
+        ResourceLocation jsLocation = new ResourceLocation(modelLocation.getResourceDomain(), modelLocation.getResourcePath() + ".js");
+        try {
+            resourceManager.getResource(jsLocation);
+            return true;
+        } catch (IOException e) {
+            return false;
+        }
     }
 
     @Override
     public IModel loadModel(ResourceLocation modelLocation) throws Exception {
-        ResourceLocation location = new ResourceLocation(modelLocation.getResourceDomain(), modelLocation.getResourcePath());
+        ResourceLocation location = new ResourceLocation(modelLocation.getResourceDomain(), modelLocation.getResourcePath() + ".js");
 
         Module module = loadModule(location);
         String output = (String) json.callMember("stringify", module.exports);
