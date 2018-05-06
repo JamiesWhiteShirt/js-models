@@ -1,0 +1,16 @@
+[
+{
+  "modid": "jsmodels",
+  "name": "JS Models",
+  "description": "Delightfully devilish.",
+  "version": "${version}",
+  "mcversion": "${mcversion}",
+  "url": "",
+  "updateUrl": "",
+  "authorList": ["JamiesWhiteShirt"],
+  "credits": "",
+  "logoFile": "",
+  "screenshots": [],
+  "dependencies": []
+}
+]
