@@ -1,7 +1,6 @@
 package com.jamieswhiteshirt.jsmodels;
 
 import com.google.common.collect.ImmutableMap;
-import jdk.nashorn.api.scripting.ScriptObjectMirror;
 import net.minecraft.client.renderer.block.model.ModelBlock;
 import net.minecraft.client.resources.IResource;
 import net.minecraft.client.resources.IResourceManager;
@@ -13,6 +12,7 @@ import net.minecraftforge.client.model.animation.ModelBlockAnimation;
 import net.minecraftforge.fml.common.Mod;
 import org.apache.commons.io.IOUtils;
 
+import javax.script.Invocable;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
@@ -50,17 +50,9 @@ public class JSModelLoader implements ICustomModelLoader {
         }
     }
 
-    private final ScriptEngineManager engineManager = new ScriptEngineManager();
-    private ScriptObjectMirror json;
-
-    {
-        try {
-            ScriptEngine engine = engineManager.getEngineByName("nashorn");
-            json = (ScriptObjectMirror) engine.eval("JSON");
-        } catch (ScriptException e) {
-            e.printStackTrace();
-        }
-    }
+    private final ScriptEngineManager engineManager = new ScriptEngineManager(null);
+    private final Invocable jsonInvocable = (Invocable) engineManager.getEngineByName("nashorn");
+    private final Object json = ((ScriptEngine) jsonInvocable).get("JSON");
 
     private IResourceManager resourceManager;
     private Function<String, Object> require = resourceLocationString -> {
@@ -70,11 +62,12 @@ public class JSModelLoader implements ICustomModelLoader {
                 return loadModule(resourceLocation).exports;
             } else if (resourceLocationString.endsWith(".json")) {
                 IResource resource = resourceManager.getResource(resourceLocation);
-                return json.callMember("parse", IOUtils.toString(resource.getInputStream(), Charset.forName("UTF-8")));
+                return jsonInvocable.invokeMethod(json, "parse", IOUtils.toString(resource.getInputStream(), Charset.forName("UTF-8")));
             } else {
                 return null;
             }
-        } catch (IOException | ScriptException e) {
+        } catch (IOException | ScriptException | NoSuchMethodException e) {
+            e.printStackTrace();
             return null;
         }
     };
@@ -109,7 +102,7 @@ public class JSModelLoader implements ICustomModelLoader {
         ResourceLocation location = new ResourceLocation(modelLocation.getResourceDomain(), modelLocation.getResourcePath() + ".js");
 
         Module module = loadModule(location);
-        String output = (String) json.callMember("stringify", module.exports);
+        String output = (String) jsonInvocable.invokeMethod(json, "stringify", module.exports);
         ModelBlock modelBlock = ModelBlock.deserialize(new StringReader(output));
         ModelLoader modelLoader = (ModelLoader) VanillaLoader_loader.get(VanillaLoader_INSTANCE);
         return VanillaModelWrapper_constructor.newInstance(modelLoader, modelLocation, modelBlock, false, defaultModelBlockAnimation);
